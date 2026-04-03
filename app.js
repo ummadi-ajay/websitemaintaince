@@ -34,9 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function init() {
-    // Check for token
+    // Check for token in localStorage first
+    const storedToken = localStorage.getItem('github_token');
+    if (storedToken) {
+        GITHUB_TOKEN = storedToken;
+    }
+    
+    // If no token, prompt user
     if (!GITHUB_TOKEN) {
-        showError('GitHub token not configured. Please set your token.');
+        showTokenInput();
         return;
     }
     
@@ -52,6 +58,28 @@ async function init() {
     // Update time
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
+}
+
+function showTokenInput() {
+    const banner = document.getElementById('error-banner');
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+        <i class="fas fa-key"></i>
+        <span style="flex: 1; margin-right: 10px;">GitHub Token:</span>
+        <input type="password" id="token-input" placeholder="ghp_xxx..." style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+        <button onclick="saveToken()" style="padding: 8px 16px; background: var(--accent-primary); color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">Save</button>
+        <button onclick="hideError()" style="background: none; border: none; color: var(--text-primary); cursor: pointer; margin-left: 5px;"><i class="fas fa-times"></i></button>
+    `;
+}
+
+function saveToken() {
+    const input = document.getElementById('token-input');
+    if (input && input.value) {
+        GITHUB_TOKEN = input.value;
+        localStorage.setItem('github_token', GITHUB_TOKEN);
+        hideError();
+        init();
+    }
 }
 
 // ========================================================================
@@ -396,7 +424,8 @@ function showError(message) {
 }
 
 function hideError() {
-    document.getElementById('error-banner').style.display = 'none';
+    const banner = document.getElementById('error-banner');
+    banner.style.display = 'none';
 }
 
 function updateCurrentTime() {
