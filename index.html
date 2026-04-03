@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Agent Dashboard | MakerWorks Lab</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>Agent Dashboard</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="refresh-btn" class="btn btn-outline" onclick="refreshAll()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button id="theme-toggle" class="btn btn-outline" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="last-updated">
+                <span id="last-updated">Last updated: --</span>
+            </div>
+        </header>
+
+        <!-- Error Banner -->
+        <div id="error-banner" class="error-banner" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="error-message">Error message here</span>
+            <button onclick="hideError()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Agent Cards -->
+        <main class="agents-grid">
+            
+            <!-- Photo Sync Agent -->
+            <div class="agent-card" id="photo-sync-card">
+                <div class="card-header">
+                    <div class="agent-icon photo">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="agent-info">
+                        <h2>📷 Photo Sync Agent</h2>
+                        <p>Syncs photos from Google Drive to gallery</p>
+                    </div>
+                    <div class="status-badge" id="photo-sync-status">
+                        <span class="status-dot loading"></span>
+                        <span class="status-text">Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="stat-row">
+                        <div class="stat">
+                            <span class="stat-label">Last Run</span>
+                            <span class="stat-value" id="photo-sync-last-run">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Duration</span>
+                            <span class="stat-value" id="photo-sync-duration">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="run-info" id="photo-sync-run-info" style="display: none;">
+                        <div class="run-status">
+                            <span id="photo-sync-run-status">--</span>
+                        </div>
+                        <div class="run-conclusion" id="photo-sync-conclusion">
+                            <span>--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="error-details" id="photo-sync-error" style="display: none;">
+                        <div class="error-header">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>Error Details</span>
+                        </div>
+                        <pre id="photo-sync-error-text"></pre>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <button class="btn btn-primary" onclick="runWorkflow('photo-sync')">
+                        <i class="fas fa-play"></i> Run Now
+                    </button>
+                    <button class="btn btn-outline" onclick="openLogs('photo-sync')">
+                        <i class="fas fa-list-alt"></i> View Logs
+                    </button>
+                </div>
+            </div>
+
+            <!-- Blog Generator Agent -->
+            <div class="agent-card" id="blog-generator-card">
+                <div class="card-header">
+                    <div class="agent-icon blog">
+                        <i class="fas fa-blog"></i>
+                    </div>
+                    <div class="agent-info">
+                        <h2>📝 Blog Generator Agent</h2>
+                        <p>Generates robotics blog posts automatically</p>
+                    </div>
+                    <div class="status-badge" id="blog-generator-status">
+                        <span class="status-dot loading"></span>
+                        <span class="status-text">Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="stat-row">
+                        <div class="stat">
+                            <span class="stat-label">Last Run</span>
+                            <span class="stat-value" id="blog-generator-last-run">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Duration</span>
+                            <span class="stat-value" id="blog-generator-duration">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="run-info" id="blog-generator-run-info" style="display: none;">
+                        <div class="run-status">
+                            <span id="blog-generator-run-status">--</span>
+                        </div>
+                        <div class="run-conclusion" id="blog-generator-conclusion">
+                            <span>--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="error-details" id="blog-generator-error" style="display: none;">
+                        <div class="error-header">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>Error Details</span>
+                        </div>
+                        <pre id="blog-generator-error-text"></pre>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <button class="btn btn-primary" onclick="runWorkflow('blog-generator')">
+                        <i class="fas fa-play"></i> Run Now
+                    </button>
+                    <button class="btn btn-outline" onclick="openLogs('blog-generator')">
+                        <i class="fas fa-list-alt"></i> View Logs
+                    </button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Run History Section -->
+        <section class="history-section">
+            <h3><i class="fas fa-history"></i> Recent Runs</h3>
+            <div class="history-list" id="history-list">
+                <div class="history-loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading history...
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>MakerWorks Lab | <span id="current-time">--</span></p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Running workflow...</p>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

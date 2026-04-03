@@ -1,0 +1,14 @@
+# GitHub Token - DO NOT COMMIT
+config-token.js
+
+# Local environment
+.env
+.env.local
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
