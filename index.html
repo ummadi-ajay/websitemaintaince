@@ -37,8 +37,23 @@
             <button onclick="hideError()"><i class="fas fa-times"></i></button>
         </div>
 
+        <!-- Token Input -->
+        <div id="token-section" class="token-section" style="display: none;">
+            <div class="token-card">
+                <h3><i class="fas fa-key"></i> GitHub Token Required</h3>
+                <p>Enter your GitHub Personal Access Token to access the dashboard.</p>
+                <input type="password" id="token-input" placeholder="ghp_xxxxxxxxxxxx" />
+                <button onclick="saveToken()" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Token
+                </button>
+                <p class="token-help">
+                    Get token from: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a>
+                </p>
+            </div>
+        </div>
+
         <!-- Agent Cards -->
-        <main class="agents-grid">
+        <main class="agents-grid" id="agents-section">
             
             <!-- Photo Sync Agent -->
             <div class="agent-card" id="photo-sync-card">
@@ -63,26 +78,9 @@
                             <span class="stat-value" id="photo-sync-last-run">--</span>
                         </div>
                         <div class="stat">
-                            <span class="stat-label">Duration</span>
-                            <span class="stat-value" id="photo-sync-duration">--</span>
+                            <span class="stat-label">Status</span>
+                            <span class="stat-value" id="photo-sync-conclusion">--</span>
                         </div>
-                    </div>
-                    
-                    <div class="run-info" id="photo-sync-run-info" style="display: none;">
-                        <div class="run-status">
-                            <span id="photo-sync-run-status">--</span>
-                        </div>
-                        <div class="run-conclusion" id="photo-sync-conclusion">
-                            <span>--</span>
-                        </div>
-                    </div>
-                    
-                    <div class="error-details" id="photo-sync-error" style="display: none;">
-                        <div class="error-header">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <span>Error Details</span>
-                        </div>
-                        <pre id="photo-sync-error-text"></pre>
                     </div>
                 </div>
                 
@@ -90,8 +88,8 @@
                     <button class="btn btn-primary" onclick="runWorkflow('photo-sync')">
                         <i class="fas fa-play"></i> Run Now
                     </button>
-                    <button class="btn btn-outline" onclick="openLogs('photo-sync')">
-                        <i class="fas fa-list-alt"></i> View Logs
+                    <button class="btn btn-outline" onclick="openGitHubActions('photo-sync')">
+                        <i class="fab fa-github"></i> GitHub Actions
                     </button>
                 </div>
             </div>
@@ -119,26 +117,9 @@
                             <span class="stat-value" id="blog-generator-last-run">--</span>
                         </div>
                         <div class="stat">
-                            <span class="stat-label">Duration</span>
-                            <span class="stat-value" id="blog-generator-duration">--</span>
+                            <span class="stat-label">Status</span>
+                            <span class="stat-value" id="blog-generator-conclusion">--</span>
                         </div>
-                    </div>
-                    
-                    <div class="run-info" id="blog-generator-run-info" style="display: none;">
-                        <div class="run-status">
-                            <span id="blog-generator-run-status">--</span>
-                        </div>
-                        <div class="run-conclusion" id="blog-generator-conclusion">
-                            <span>--</span>
-                        </div>
-                    </div>
-                    
-                    <div class="error-details" id="blog-generator-error" style="display: none;">
-                        <div class="error-header">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <span>Error Details</span>
-                        </div>
-                        <pre id="blog-generator-error-text"></pre>
                     </div>
                 </div>
                 
@@ -146,23 +127,13 @@
                     <button class="btn btn-primary" onclick="runWorkflow('blog-generator')">
                         <i class="fas fa-play"></i> Run Now
                     </button>
-                    <button class="btn btn-outline" onclick="openLogs('blog-generator')">
-                        <i class="fas fa-list-alt"></i> View Logs
+                    <button class="btn btn-outline" onclick="openGitHubActions('blog-generator')">
+                        <i class="fab fa-github"></i> GitHub Actions
                     </button>
                 </div>
             </div>
 
         </main>
-
-        <!-- Run History Section -->
-        <section class="history-section">
-            <h3><i class="fas fa-history"></i> Recent Runs</h3>
-            <div class="history-list" id="history-list">
-                <div class="history-loading">
-                    <i class="fas fa-spinner fa-spin"></i> Loading history...
-                </div>
-            </div>
-        </section>
 
         <!-- Footer -->
         <footer class="footer">
@@ -178,7 +149,275 @@
         </div>
     </div>
 
-    <script src="config.js"></script>
-    <script src="app.js"></script>
+    <script>
+        // ========================================================================
+        // CONFIGURATION
+        // ========================================================================
+        
+        const CONFIG = {
+            GITHUB_OWNER: 'ummadi-ajay',
+            GITHUB_REPO: 'ummadi-ajay.github.io',
+            WORKFLOWS: {
+                'photo-sync': {
+                    id: 254954831,
+                    name: 'Photo Sync Agent'
+                },
+                'blog-generator': {
+                    id: 254881964,
+                    name: 'Blog Generator Agent'
+                }
+            }
+        };
+
+        // ========================================================================
+        // GLOBAL VARIABLES
+        // ========================================================================
+        
+        let GITHUB_TOKEN = localStorage.getItem('github_token') || '';
+        const API_BASE = 'https://api.github.com';
+
+        // ========================================================================
+        // INITIALIZATION
+        // ========================================================================
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+        });
+
+        async function init() {
+            if (!GITHUB_TOKEN) {
+                showTokenInput();
+                return;
+            }
+            
+            document.getElementById('token-section').style.display = 'none';
+            document.getElementById('agents-section').style.display = 'grid';
+            
+            await refreshAll();
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            setInterval(refreshAll, 30000);
+        }
+
+        function showTokenInput() {
+            document.getElementById('token-section').style.display = 'block';
+            document.getElementById('agents-section').style.display = 'none';
+        }
+
+        function saveToken() {
+            const input = document.getElementById('token-input');
+            if (input && input.value) {
+                GITHUB_TOKEN = input.value;
+                localStorage.setItem('github_token', GITHUB_TOKEN);
+                init();
+            }
+        }
+
+        // ========================================================================
+        // REFRESH FUNCTIONS
+        // ========================================================================
+        
+        async function refreshAll() {
+            document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+            
+            await Promise.all([
+                refreshWorkflowStatus('photo-sync'),
+                refreshWorkflowStatus('blog-generator')
+            ]);
+        }
+
+        async function refreshWorkflowStatus(agentKey) {
+            const workflow = CONFIG.WORKFLOWS[agentKey];
+            if (!workflow) return;
+            
+            try {
+                const runs = await githubApiGet(
+                    `/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/actions/workflows/${workflow.id}/runs?per_page=1`
+                );
+                
+                if (runs.workflow_runs && runs.workflow_runs.length > 0) {
+                    const run = runs.workflow_runs[0];
+                    updateAgentCard(agentKey, run);
+                } else {
+                    updateAgentCard(agentKey, null);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                updateAgentCard(agentKey, null, error.message);
+            }
+        }
+
+        function updateAgentCard(agentKey, runData, errorMessage = null) {
+            const statusBadge = document.getElementById(`${agentKey}-status`);
+            const lastRunEl = document.getElementById(`${agentKey}-last-run`);
+            const conclusionEl = document.getElementById(`${agentKey}-conclusion`);
+            
+            if (errorMessage) {
+                statusBadge.className = 'status-badge failed';
+                statusBadge.innerHTML = '<span class="status-dot failed"></span><span class="status-text">Error</span>';
+                lastRunEl.textContent = errorMessage;
+                conclusionEl.textContent = 'Failed';
+                return;
+            }
+            
+            if (!runData) {
+                statusBadge.className = 'status-badge';
+                statusBadge.innerHTML = '<span class="status-dot loading"></span><span class="status-text">No runs</span>';
+                lastRunEl.textContent = '--';
+                conclusionEl.textContent = '--';
+                return;
+            }
+            
+            const status = runData.status;
+            const conclusion = runData.conclusion;
+            
+            if (status === 'in_progress') {
+                statusBadge.className = 'status-badge running';
+                statusBadge.innerHTML = '<span class="status-dot running"></span><span class="status-text">Running</span>';
+            } else if (status === 'completed') {
+                if (conclusion === 'success') {
+                    statusBadge.className = 'status-badge success';
+                    statusBadge.innerHTML = '<span class="status-dot success"></span><span class="status-text">Success</span>';
+                } else {
+                    statusBadge.className = 'status-badge failed';
+                    statusBadge.innerHTML = '<span class="status-dot failed"></span><span class="status-text">Failed</span>';
+                }
+            } else {
+                statusBadge.className = 'status-badge queued';
+                statusBadge.innerHTML = '<span class="status-dot"></span><span class="status-text">' + status + '</span>';
+            }
+            
+            const runDate = new Date(runData.created_at);
+            lastRunEl.textContent = getRelativeTime(runDate);
+            conclusionEl.textContent = conclusion || status;
+        }
+
+        // ========================================================================
+        // RUN WORKFLOW
+        // ========================================================================
+        
+        async function runWorkflow(agentKey) {
+            const workflow = CONFIG.WORKFLOWS[agentKey];
+            if (!workflow) return;
+            
+            showLoading(true);
+            
+            try {
+                await githubApiPost(
+                    `/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/actions/workflows/${workflow.id}/dispatches`,
+                    { ref: 'main' }
+                );
+                
+                setTimeout(() => {
+                    showLoading(false);
+                    refreshAll();
+                }, 3000);
+                
+            } catch (error) {
+                showLoading(false);
+                showError('Failed to run workflow: ' + error.message);
+            }
+        }
+
+        function openGitHubActions(agentKey) {
+            window.open('https://github.com/' + CONFIG.GITHUB_OWNER + '/' + CONFIG.GITHUB_REPO + '/actions', '_blank');
+        }
+
+        // ========================================================================
+        // GITHUB API
+        // ========================================================================
+        
+        async function githubApiGet(endpoint) {
+            const response = await fetch(API_BASE + endpoint, {
+                headers: {
+                    'Authorization': 'Bearer ' + GITHUB_TOKEN,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('github_token');
+                    GITHUB_TOKEN = '';
+                    showError('Invalid token. Please enter a new one.');
+                    showTokenInput();
+                    throw new Error('Invalid token');
+                }
+                throw new Error('API error: ' + response.status);
+            }
+            
+            return response.json();
+        }
+
+        async function githubApiPost(endpoint, data) {
+            const response = await fetch(API_BASE + endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + GITHUB_TOKEN,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('github_token');
+                    GITHUB_TOKEN = '';
+                    showError('Invalid token. Please enter a new one.');
+                    showTokenInput();
+                    throw new Error('Invalid token');
+                }
+                throw new Error('API error: ' + response.status);
+            }
+            
+            return response.json();
+        }
+
+        // ========================================================================
+        // UI HELPERS
+        // ========================================================================
+        
+        function showLoading(show) {
+            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+        }
+
+        function showError(message) {
+            const banner = document.getElementById('error-banner');
+            document.getElementById('error-message').textContent = message;
+            banner.style.display = 'flex';
+        }
+
+        function hideError() {
+            document.getElementById('error-banner').style.display = 'none';
+        }
+
+        function updateCurrentTime() {
+            document.getElementById('current-time').textContent = new Date().toLocaleString();
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const newTheme = current === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+        }
+
+        function getRelativeTime(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return diffMins + ' mins ago';
+            
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return diffHours + ' hours ago';
+            
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return diffDays + ' days ago';
+            
+            return date.toLocaleDateString();
+        }
+    </script>
 </body>
 </html>
