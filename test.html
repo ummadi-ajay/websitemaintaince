@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>Testing GitHub API</h1>
+    <div id="result"></div>
+    
+    <script>
+        const token = localStorage.getItem('github_token');
+        document.getElementById('result').innerHTML = '<p>Token: ' + (token ? 'Found (' + token.substring(0, 10) + '...)' : 'Not found') + '</p>';
+        
+        if (token) {
+            fetch('https://api.github.com/repos/ummadi-ajay/ummadi-ajay.github.io/actions/runs?per_page=1', {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
+                document.getElementById('result').innerHTML += '<p>Status: ' + response.status + '</p>';
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('result').innerHTML += '<p>Success! Found ' + (data.workflow_runs ? data.workflow_runs.length : 0) + ' runs</p>';
+                if (data.workflow_runs && data.workflow_runs.length > 0) {
+                    document.getElementById('result').innerHTML += '<p>Last run: ' + data.workflow_runs[0].name + '</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML += '<p style="color:red;">Error: ' + error.message + '</p>';
+            });
+        }
+    </script>
+</body>
+</html>
