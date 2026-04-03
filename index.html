@@ -368,10 +368,17 @@
                     showTokenInput();
                     throw new Error('Invalid token');
                 }
+                if (response.status === 403) {
+                    showError('Token does not have permission to run workflows. Please create a new token with "workflow" scope.');
+                    throw new Error('Forbidden - missing workflow permission');
+                }
                 throw new Error('API error: ' + response.status);
             }
             
-            return response.json();
+            // GitHub returns 204 No Content for workflow triggers - handle empty response
+            const text = await response.text();
+            if (!text) return { success: true };
+            return JSON.parse(text);
         }
 
         // ========================================================================
