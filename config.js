@@ -7,15 +7,15 @@ const CONFIG = {
     GITHUB_OWNER: 'ummadi-ajay',
     GITHUB_REPO: 'ummadi-ajay.github.io',
     
-    // Workflow IDs (found in GitHub Actions URL or API)
+    // Workflow IDs (from GitHub API)
     WORKFLOWS: {
         'photo-sync': {
-            id: 'photo-sync.yml',
+            id: 254954831,
             name: '📷 Photo Sync Agent',
             description: 'Syncs photos from Google Drive to gallery'
         },
         'blog-generator': {
-            id: 'blog-generator.yml',
+            id: 254881964,
             name: '📝 Blog Generator Agent',
             description: 'Generates robotics blog posts'
         }

@@ -373,6 +373,9 @@ function getAgentKeyFromWorkflow(workflowId) {
 // ========================================================================
 
 async function githubApiGet(endpoint) {
+    console.log('API Request:', API_BASE + endpoint);
+    console.log('Token:', GITHUB_TOKEN ? 'Present' : 'Missing');
+    
     const response = await fetch(API_BASE + endpoint, {
         method: 'GET',
         headers: {
@@ -381,15 +384,20 @@ async function githubApiGet(endpoint) {
         }
     });
     
+    console.log('Response status:', response.status);
+    
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`API error ${response.status}: ${errorText}`);
     }
     
     return response.json();
 }
 
 async function githubApiPost(endpoint, data) {
+    console.log('API POST Request:', API_BASE + endpoint);
+    
     const response = await fetch(API_BASE + endpoint, {
         method: 'POST',
         headers: {
@@ -400,9 +408,12 @@ async function githubApiPost(endpoint, data) {
         body: JSON.stringify(data)
     });
     
+    console.log('POST Response status:', response.status);
+    
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('POST Error:', errorText);
+        throw new Error(`API error ${response.status}: ${errorText}`);
     }
     
     return response.json();
